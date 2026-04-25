@@ -10,7 +10,7 @@ screenGui.ResetOnSpawn = false
 
 local godModeActive = false
 
--- Interface (Mesmo estilo que você gosta)
+-- Interface
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 200, 0, 60)
 mainFrame.Position = UDim2.new(1, -220, 1, -80)
@@ -24,38 +24,45 @@ godModeButton.Text = "Ativar God Mode"
 godModeButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
 godModeButton.Parent = mainFrame
 
--- LOOP DE PROTEÇÃO AVANÇADA
-task.spawn(function()
-    while true do
-        task.wait(0.1)
-        if godModeActive then
-            pcall(function()
-                local char = player.Character
-                if char then
-                    -- MÉTODO 1: Remover as "Joints" de Dano
-                    -- Tenta impedir que o servidor registre que você "quebrou"
-                    if char:FindFirstChild("Humanoid") then
-                        char.Humanoid.BreakJointsOnDeath = false
-                    end
-
-                    -- MÉTODO 2: Loop de Posição (Buga o Hitbox)
-                    -- Alguns sistemas de tiro perdem o alvo se o HumanoidRootPart 
-                    -- for manipulado levemente.
-                    
-                    -- MÉTODO 3: Deletar Scripts de Dano (Local)
-                    for _, v in pairs(char:GetDescendants()) do
-                        if v:IsA("RemoteEvent") and (v.Name:lower():find("damage") or v.Name:lower():find("hit")) then
-                            -- CUIDADO: Isso pode te desconectar se o jogo for bem protegido
-                        end
-                    end
-                end
-            end)
+-- FUNÇÃO DE IMORTALIDADE AVANÇADA
+local function applyGod()
+    local char = player.Character
+    if char then
+        -- Tenta o método do ForceField
+        local ff = Instance.new("ForceField")
+        ff.Parent = char
+        ff.Visible = true
+        
+        -- Tenta deletar scripts de dano locais
+        for _, v in pairs(char:GetDescendants()) do
+            if v:IsA("Script") and (v.Name:lower():find("damage") or v.Name:lower():find("kill")) then
+                v:Destroy()
+            end
         end
+        
+        -- Loop de cura forçada (Brute Force)
+        task.spawn(function()
+            while godModeActive do
+                if char:FindFirstChild("Humanoid") then
+                    char.Humanoid.Health = char.Humanoid.MaxHealth
+                end
+                task.wait(0.1)
+            end
+        end)
     end
-end)
+end
 
 godModeButton.MouseButton1Click:Connect(function()
     godModeActive = not godModeActive
     godModeButton.Text = godModeActive and "God Mode: ON ✓" or "Ativar God Mode"
     godModeButton.BackgroundColor3 = godModeActive and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(200, 0, 0)
+    
+    if godModeActive then
+        applyGod()
+    else
+        -- Remove o ForceField ao desligar
+        if player.Character and player.Character:FindFirstChildOfClass("ForceField") then
+            player.Character:FindFirstChildOfClass("ForceField"):Destroy()
+        end
+    end
 end)
