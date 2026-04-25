@@ -1,6 +1,6 @@
 --[[ 
-    KILL AURA SILENCIOSA V1
-    Instruções: Ative e chegue perto de alguém.
+    KILL AURA COM FERRAMENTA V2
+    Como usar: Ative o botão e EQUIPE o soco ou arma branca na mão.
 ]]
 
 local player = game.Players.LocalPlayer
@@ -14,7 +14,7 @@ screenGui.Parent = coreGui
 screenGui.ResetOnSpawn = false 
 
 local killAuraActive = false
-local range = 15 -- Distância para o abate (Não coloque muito alto para não ser banido)
+local range = 18 -- Distância que ele pega os inimigos
 
 -- Interface
 local mainFrame = Instance.new("Frame")
@@ -31,31 +31,40 @@ btn.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
 btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 btn.Parent = mainFrame
 
--- FUNÇÃO KILL AURA
+-- FUNÇÃO QUE TENTA ATACAR USANDO O QUE ESTÁ NA MÃO
 task.spawn(function()
     while true do
-        task.wait(0.5) -- Ataca a cada meio segundo para parecer "natural"
+        task.wait(0.1) -- Velocidade do ataque
         if killAuraActive then
-            pcall(function()
-                for _, target in pairs(game.Players:GetPlayers()) do
-                    if target ~= player and target.Character and target.Character:FindFirstChild("Humanoid") then
-                        local distance = (player.Character.HumanoidRootPart.Position - target.Character.HumanoidRootPart.Position).Magnitude
-                        
-                        if distance <= range and target.Character.Humanoid.Health > 0 then
-                            -- Tenta tirar vida (Método por dano direto local)
-                            -- Nota: Se o jogo tiver proteção, precisaremos do Remote de soco/arma
-                            target.Character.Humanoid.Health = 0
-                            print("Alvo abatido pela Aura: "..target.Name)
+            local char = player.Character
+            local tool = char and char:FindFirstChildOfClass("Tool") -- Vê o que você está segurando
+            
+            if tool then
+                pcall(function()
+                    for _, target in pairs(game.Players:GetPlayers()) do
+                        if target ~= player and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                            local distance = (char.HumanoidRootPart.Position - target.Character.HumanoidRootPart.Position).Magnitude
+                            
+                            if distance <= range and target.Character.Humanoid.Health > 0 then
+                                -- Faz a ferramenta "atacar" o alvo
+                                tool:Activate() -- Simula o clique
+                                
+                                -- Tenta enviar o dano direto via Remote se o jogo for padrão
+                                local remote = tool:FindFirstChildOfClass("RemoteEvent") or tool:FindFirstChildOfClass("BindableEvent")
+                                if remote then
+                                    remote:FireServer(target.Character.Humanoid)
+                                end
+                            end
                         end
                     end
-                end
-            end)
+                end)
+            end
         end
     end
 end)
 
 btn.MouseButton1Click:Connect(function()
     killAuraActive = not killAuraActive
-    btn.Text = killAuraActive and "Kill Aura: ATIVA" or "Kill Aura: OFF"
+    btn.Text = killAuraActive and "Aura: EQUIPE ALGO" or "Kill Aura: OFF"
     btn.BackgroundColor3 = killAuraActive and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(80, 0, 0)
 end)
